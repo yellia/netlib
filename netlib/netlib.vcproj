@@ -183,7 +183,19 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\basic_io_server.h"
+				RelativePath=".\BasicIoServer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\BasicSession.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\BasicWorkPool.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\NetLibTypes.hpp"
 				>
 			</File>
 		</Filter>
@@ -192,6 +204,18 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+		</Filter>
+		<Filter
+			Name="impl"
+			>
+			<File
+				RelativePath=".\impl\BasicIoServer.ipp"
+				>
+			</File>
+			<File
+				RelativePath=".\impl\BasicWorkPool.ipp"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
