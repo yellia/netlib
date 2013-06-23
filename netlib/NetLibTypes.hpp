@@ -15,6 +15,10 @@ namespace netlib
 	using boost::int16_t;
 	using boost::int8_t;
 
+#ifdef WIN32
+	#define snprintf _snprintf
+#endif
+
 	#define NL_BREAK_IF(cond) if (cond) break;
 	#define NL_BREAK_IF_DO(cond, stat) if (cond) { stat; break; }
 }

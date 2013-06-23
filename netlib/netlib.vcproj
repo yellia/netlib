@@ -195,6 +195,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\NetLibError.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\NetLibMessage.hpp"
+				>
+			</File>
+			<File
 				RelativePath=".\NetLibTypes.hpp"
 				>
 			</File>
@@ -213,7 +221,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\impl\BasicSession.ipp"
+				>
+			</File>
+			<File
 				RelativePath=".\impl\BasicWorkPool.ipp"
+				>
+			</File>
+			<File
+				RelativePath=".\impl\NetLibMessage.ipp"
 				>
 			</File>
 		</Filter>

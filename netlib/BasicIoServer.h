@@ -37,7 +37,12 @@ namespace netlib
 
 	private:
 		inline void  Initialize();
+		void  HandleAccepted(const boost::system::error_code&);
+		void  PerformAsyncAccept();
 		void  PerformSessionCheck(const boost::system::error_code&);
+		void  RemoveAllSessions();
+		void  RemoveAllSessionsImpl();
+		void  HandleSessionConnectedImpl(SessionPtr);
 
 	private:
 		BasicIoServer& m_WorkPool;
@@ -47,19 +52,21 @@ namespace netlib
 		boost::asio::ip::tcp::acceptor      m_Acceptor;
 		boost::asio::ip::tcp::endpoint      m_EndPoint;
 
-		SessionPtr                          m_sptr;
-		HandlerAllocator                    m_AcceptAllocator;
-		HandlerAllocator                    m_TimerAllocator;
+		SessionPtr                       m_sptr;
+		HandlerAllocator                  m_AcceptAllocator;
+		HandlerAllocator                  m_TimerAllocator;
 
-		SessionSet                          m_Sessions;
-		boost::asio::deadline_timer         m_UpdateTimer;
-		boost::asio::io_service::strand     m_UpdateStrand;
+		SessionSet                        m_Sessions;
+		boost::asio::deadline_timer        m_UpdateTimer;
+		boost::asio::io_service::strand    m_UpdateStrand;
 
-		boost::posix_time::ptime            m_ConnectMaxTime;
+		boost::posix_time::ptime           m_ConnectMaxTime;
 		uint64_t                            m_ConnectTotal;
 		uint64_t                            m_ConnectNow;
 		uint64_t                            m_ConnectMax;
 		uint64_t                            m_KickedSessions;
+
+		bool                               m_Stopping;
 	};
 }
 

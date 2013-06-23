@@ -58,9 +58,20 @@ namespace netlib
 	}
 
 	template<typename Message>
-	void  BasicIoServer<Message>::StopServer(boost::system::error_code&)
+	void  BasicIoServer<Message>::StopServer(boost::system::error_code& ec)
 	{
+		do 
+		{
+			m_Acceptor.cancel(ec);
+			NL_BREAK_IF(ec)
 
+			m_UpdateTimer.cancel(ec);
+			NL_BREAK_IF(ec)
+
+			RemoveAllSessions();
+
+			m_sptr.reset();
+		}while (0);
 	}
 
 	/*template<typename Message>
@@ -89,6 +100,74 @@ namespace netlib
 
 		m_KickedSessions     = 0;
 	}
+	
+	template<typename Message>
+	inline void  BasicIoServer<Message>::PerformAsyncAccept()
+	{
+		m_sptr.reset(HandleSessionCreate(m_WorkPool.GetIoService()));
+
+		m_Acceptor.async_accept(m_sptr->GetSocket(),
+			MakeCustomizeHandler(m_AcceptAllocator,
+				boost::bind(&BasicIoServer<Message>::HandleAccepted, this, boost::asio::placeholders::error)
+				)
+		);
+	}
+	
+	template<typename Message>
+	inline void  BasicIoServer<Message>::HandleAccepted(const boost::system::error_code& ec)
+	{
+		if(ec)
+		{
+			std::printf("Failed to async accept. %s", ec.message().c_str());
+			if(ec == boost::asio::error::make_error_code(boost::asio::error::operation_aborted))
+				return;
+		}
+		else
+		{
+			HandleSessionConnected(m_sptr);
+		}
+			
+		PerformAsyncAccept();
+	}
+	
+	template<typename Message>
+	inline void  BasicIoServer<Message>::HandleSessionConnected(SessionPtr sptr)
+	{
+		m_UpdateStrand.post(boost::bind(&BasicIoServer<Message>::HandleSessionConnectedImpl, this, sptr));
+	}
+	
+	template<typename Message>
+	inline void  BasicIoServer<Message>::HandleSessionConnectedImpl(SessionPtr sptr)
+	{
+		if(m_Stopping)
+			return;
+
+		boost::system::error_code ec;
+
+		if (m_ConnectNow >= m_ConnectionLimit) {
+			std::printf("connect limitation reached.\n");
+			//Why
+			sptr->CloseSession(ec);
+			return;
+		}
+
+		sptr->StartSession(ec);
+
+		if (ec)
+		{
+			std::printf("Failed to start session error: %s\n", ec.message().c_str());
+		}
+
+		m_ConnectTotal++;
+
+		m_Sessions.insert(sptr);
+		m_ConnectNow = m_Sessions.size();
+		
+		if(m_ConnectNow > m_ConnectMax){
+			m_ConnectMax     = m_ConnectNow;
+			m_ConnectMaxTime    = boost::posix_time::microsec_clock::local_time();
+		}
+	}
 
 	template<typename Message>
 	void  BasicIoServer<Message>::PerformSessionCheck(const boost::system::error_code& ec)
@@ -108,6 +187,7 @@ namespace netlib
 			boost::posix_time::time_duration duration = now - sptr->ActiveTime();
 			if (sptr->Socket().is_open() && duration > timeout) {
 				boost::system::error_code tmp;
+				//Why
 				sptr->CloseSession(tmp);
 				m_KickedSessions++;
 			}
@@ -117,6 +197,23 @@ namespace netlib
 		m_UpdateTimer.async_wait(m_UpdateStrand.wrap(
 			MakeCustomizeHandler(m_TimerAllocator,boost::bind(&BasicIoServer<Message>::PerformSessionCheck,this,_1))
 		));
+	}
+	
+	template<typename Message>
+	void BasicIoServer<Message>::RemoveAllSessions()
+	{
+		m_UpdateStrand.post(boost::bind(&BasicIoServer<Message>::RemoveAllSessionsImpl, this));
+	}
+	
+	template<typename Message>
+	void BasicIoServer<Message>::RemoveAllSessionsImpl()
+	{
+		boost::system::error_code ec;
+		//Why 在UpdateSrand线程里面调用某一个session的CloseSession方法会不会有问题，因为我们知道每一个session
+		//创建的时候都会给它关联一个io_service,即一个单独的处理线程
+		std::for_each(m_Sessions.begin(), m_Sessions.end(), boost::bind(&BasicSession<Message>::CloseSession, _1, boost::ref(ec)));    
+
+		m_Stopping = true;
 	}
 }
 
